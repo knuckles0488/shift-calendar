@@ -56,9 +56,12 @@ const getMonthYear = (date: Date): string => {
 }
 
 const isSameDay = (date1: Date, date2: Date): boolean => {
-    return date1.getFullYear() === date2.getFullYear() &&
-           date1.getMonth() === date2.getMonth() &&
-           date1.getDate() === date2.getDate();
+    // This function is designed to correctly compare a calendar date (date1), which is stored
+    // as a UTC midnight timestamp, with the user's current local date (date2).
+    // It compares the UTC components of date1 with the local components of date2.
+    return date1.getUTCFullYear() === date2.getFullYear() &&
+           date1.getUTCMonth() === date2.getMonth() &&
+           date1.getUTCDate() === date2.getDate();
 }
 
 const holidays: { [key: string]: string } = {
@@ -441,7 +444,7 @@ const StarredNotesList: React.FC<{ notes: DayInfo[]; allNotes: Notes }> = ({ not
 
 
 const Header: React.FC<{
-  currentDate: Date; onPrevMonth: () => void; onNextMonth: () => void;
+  currentDate: Date; onPrevMonth: () => void; onNextMonth: () => void; onGoToToday: () => void;
   allDays: DayInfo[]; notes: Notes; customHolidays: CustomHoliday[];
   selectedCrew: Crew;
   floaterDays: string[];
@@ -450,8 +453,11 @@ const Header: React.FC<{
   onDeleteCustomHoliday: (holiday: CustomHoliday) => void;
   onCrewChange: (crew: Crew) => void;
   onFloaterDayChange: (index: number, newDate: string) => void;
-}> = ({ currentDate, onPrevMonth, onNextMonth, allDays, notes, customHolidays, selectedCrew, onAddCustomHoliday, onDeleteCustomHoliday, onCrewChange, floaterDays, onFloaterDayChange, starredDays }) => {
+}> = ({ currentDate, onPrevMonth, onNextMonth, onGoToToday, allDays, notes, customHolidays, selectedCrew, onAddCustomHoliday, onDeleteCustomHoliday, onCrewChange, floaterDays, onFloaterDayChange, starredDays }) => {
   const monthName = currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+  const today = new Date();
+  const isCurrentMonth = currentDate.getUTCFullYear() === today.getFullYear() && currentDate.getUTCMonth() === today.getMonth();
+
   return (
     <header className="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-20">
       <div className="container mx-auto px-4 py-3">
@@ -467,7 +473,18 @@ const Header: React.FC<{
             <h2 className="text-lg md:text-xl font-semibold text-center w-40 md:w-48">{monthName}</h2>
             <button onClick={onNextMonth} aria-label="Next month" className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg></button>
           </div>
-          <div className="w-1/3 flex justify-end"><SettingsMenu {...{allDays, notes, customHolidays, selectedCrew, onAddCustomHoliday, onDeleteCustomHoliday, onCrewChange, floaterDays, onFloaterDayChange, starredDays}} /></div>
+          <div className="w-1/3 flex justify-end items-center">
+            {!isCurrentMonth && (
+                <button
+                    onClick={onGoToToday}
+                    aria-label="Go to current month"
+                    className="mr-2 sm:mr-4 px-3 py-1.5 text-xs font-semibold rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                >
+                    Today
+                </button>
+            )}
+            <SettingsMenu {...{allDays, notes, customHolidays, selectedCrew, onAddCustomHoliday, onDeleteCustomHoliday, onCrewChange, floaterDays, onFloaterDayChange, starredDays}} />
+          </div>
         </div>
       </div>
     </header>
@@ -545,6 +562,9 @@ const App: React.FC = () => {
       return newDays.sort();
     });
   }, [setFloaterDays]);
+  const handleGoToToday = useCallback(() => {
+    setCurrentDate(getInitialDate());
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-gray-200 flex flex-col">
@@ -552,6 +572,7 @@ const App: React.FC = () => {
         currentDate={currentDate}
         onPrevMonth={handlePrevMonth}
         onNextMonth={handleNextMonth}
+        onGoToToday={handleGoToToday}
         allDays={days}
         notes={notes}
         customHolidays={customHolidays}
