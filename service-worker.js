@@ -1,21 +1,21 @@
 const CACHE_NAME = 'shift-planner-cache-v1';
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/index.tsx',
-  '/App.tsx',
-  '/types.ts',
-  '/icon.svg',
-  '/manifest.json',
-  '/hooks/useLocalStorage.ts',
-  '/utils/date.ts',
-  '/utils/schedule.ts',
-  '/utils/holidays.ts',
-  '/components/Header.tsx',
-  '/components/Calendar.tsx',
-  '/components/CalendarDay.tsx',
-  '/components/DayDetailModal.tsx',
-  '/components/SettingsMenu.tsx',
+  './',
+  './index.html',
+  './index.tsx',
+  './App.tsx',
+  './types.ts',
+  './icon.svg',
+  './manifest.json',
+  './hooks/useLocalStorage.ts',
+  './utils/date.ts',
+  './utils/schedule.ts',
+  './utils/holidays.ts',
+  './components/Header.tsx',
+  './components/Calendar.tsx',
+  './components/CalendarDay.tsx',
+  './components/DayDetailModal.tsx',
+  './components/SettingsMenu.tsx',
   'https://cdn.tailwindcss.com',
   'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf-autotable.min.js',
@@ -28,7 +28,9 @@ self.addEventListener('install', event => {
     caches.open(CACHE_NAME)
       .then(cache => {
         console.log('Opened cache');
-        return cache.addAll(urlsToCache);
+        // Use {cache: 'reload'} to bypass HTTP cache for third-party resources during install
+        const requests = urlsToCache.map(url => new Request(url, {cache: 'reload'}));
+        return cache.addAll(requests);
       })
   );
 });
@@ -42,11 +44,10 @@ self.addEventListener('fetch', event => {
         }
         return fetch(event.request).then(
           response => {
-            // Check if we received a valid response
-            if(!response || response.status !== 200 || response.type !== 'basic') {
-              if (response && (response.type === 'opaque' || response.type === 'cors')) {
-                 return response; // For CDN resources
-              }
+            // Check if we received a valid response to cache
+            // We only cache GET requests that return a 2xx status.
+            // We also cache opaque responses (for CDNs)
+            if(!response || response.status !== 200 || event.request.method !== 'GET') {
               return response;
             }
 
