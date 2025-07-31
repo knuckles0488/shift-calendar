@@ -4,7 +4,7 @@
   "description": "A daily planner designed for a 2-day, 2-night, 4-off rotating shift schedule.",
   "icons": [
     {
-      "src": "/icon.svg",
+      "src": "./icon.svg",
       "type": "image/svg+xml",
       "sizes": "192x192 512x512"
     }
