@@ -2,13 +2,6 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom/client';
 
-// ====== GLOBAL DECLARATIONS ======
-declare global {
-  interface Window {
-    jspdf: any;
-  }
-}
-
 // ====== TYPES (from types.ts) ======
 enum ShiftType {
   DAY = 'Day',
@@ -184,51 +177,49 @@ const SettingsMenu: React.FC<{
       return acc;
     }, {} as GroupedDays), [allDays]);
   
-  const generatePdf = (monthYear: string, daysInMonth: DayInfo[]) => {
-    const jspdf = (window as any).jspdf;
-    if (!jspdf || !jspdf.jsPDF) {
-      alert("PDF generation library (jsPDF) could not be found. Please ensure you are online for the first load.");
-      return;
-    }
-
-    // The jspdf-autotable UMD script attaches the autoTable function to the global jspdf object.
-    if (typeof jspdf.autoTable !== 'function') {
-      alert("PDF table plugin (jsPDF-autoTable) failed to load. Please check your internet connection and try again.");
-      return;
-    }
-
-    const { jsPDF } = jspdf;
-    const doc = new jsPDF();
-    
+  const generateCsv = (monthYear: string, daysInMonth: DayInfo[]) => {
     const monthName = new Date(daysInMonth[0].date).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
-    doc.setFontSize(18);
-    doc.text(`Notes Summary for ${monthName}`, 14, 22);
 
-    const tableRows = daysInMonth
+    const rows = daysInMonth
       .map(day => ({ day, note: notes[formatDateKey(day.date)] || '' }))
-      .filter(({ note }) => note.trim() !== '')
-      .map(({ day, note }) => [
-        day.date.toLocaleDateString('en-US', { day: '2-digit', timeZone: 'UTC' }),
-        day.date.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' }),
-        day.shift,
-        note
-      ]);
+      .filter(({ note }) => note.trim() !== '');
 
-    if (tableRows.length === 0) {
+    if (rows.length === 0) {
       alert(`No notes found for ${monthName} to generate a summary.`);
       return;
     }
-
-    jspdf.autoTable(doc, {
-        head: [["Date", "Day", "Shift", "Notes"]],
-        body: tableRows,
-        startY: 30,
-        headStyles: { fillColor: [22, 160, 133] },
-        alternateRowStyles: { fillColor: [240, 240, 240] },
-    });
     
-    doc.save(`notes-summary-${monthYear}.pdf`);
+    const escapeCsvField = (field: string): string => {
+        let escaped = field.replace(/"/g, '""');
+        if (escaped.includes(',') || escaped.includes('\n') || escaped.includes('\r')) {
+            escaped = `"${escaped}"`;
+        }
+        return escaped;
+    };
+
+    const headers = ["Date", "Weekday", "Shift", "Notes"];
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(({ day, note }) => [
+        formatDateKey(day.date),
+        day.date.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' }),
+        day.shift,
+        escapeCsvField(note)
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `notes-summary-${monthYear}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
+
 
   return (
     <div ref={menuRef} className="relative">
@@ -238,8 +229,8 @@ const SettingsMenu: React.FC<{
       {isOpen && (
         <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-30">
           <div className="py-1">
-            <div className="px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Download Monthly PDF</div>
-            <div className="max-h-48 overflow-y-auto">{Object.keys(groupedDays).sort().map(monthYear => (<button key={monthYear} onClick={() => { generatePdf(monthYear, groupedDays[monthYear]); setIsOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">{new Date(groupedDays[monthYear][0].date).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' })}</button>))}</div>
+            <div className="px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Download Monthly CSV</div>
+            <div className="max-h-48 overflow-y-auto">{Object.keys(groupedDays).sort().map(monthYear => (<button key={monthYear} onClick={() => { generateCsv(monthYear, groupedDays[monthYear]); setIsOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">{new Date(groupedDays[monthYear][0].date).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' })}</button>))}</div>
           </div>
           <div className="border-t border-gray-200 dark:border-gray-700"></div>
           <div className="p-4 space-y-4">
@@ -522,7 +513,7 @@ root.render(
 );
 
 if ('serviceWorker' in navigator) {
-  const CACHE_VERSION = 'v13';
+  const CACHE_VERSION = 'v14';
   window.addEventListener('load', () => {
     navigator.serviceWorker.register(`./service-worker.js?v=${CACHE_VERSION}`, { scope: './' })
       .then(registration => console.log('Service Worker registered: ', registration))
