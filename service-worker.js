@@ -1,4 +1,4 @@
-const CACHE_NAME = 'shift-planner-cache-v9';
+const CACHE_NAME = 'shift-planner-cache-v10';
 const urlsToCache = [
   './',
   './index.html',
