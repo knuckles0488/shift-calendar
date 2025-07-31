@@ -11,7 +11,7 @@ A simple, offline-first daily planner designed for a 2-day, 2-night, 4-off rotat
 - **Star Important Days:** Mark any day with a star for easy reference.
 - **Holiday & Event Overlays:** Automatically displays statutory holidays and special "Floater" days.
 - **Custom Holiday Ranges:** Add your own vacation or holiday periods which will be highlighted on the calendar.
-- **PDF Export:** Generate a PDF summary of your notes for any month.
+- **CSV Export:** Generate a CSV summary of your notes for any month.
 - **Offline First:** As a PWA, the app works entirely offline after the first visit.
 - **Responsive Design:** Looks great on desktop, tablets, and mobile devices.
 
