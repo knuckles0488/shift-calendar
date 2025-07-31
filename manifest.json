@@ -2,7 +2,7 @@
   "short_name": "Shift Planner",
   "name": "Shift Cycle Daily Planner",
   "description": "A daily planner designed for a 2-day, 2-night, 4-off rotating shift schedule.",
-  "id": "/?source=pwa",
+  "id": "/shift-planner-pwa/",
   "icons": [
     {
       "src": "./icon.svg",
@@ -11,7 +11,7 @@
       "purpose": "any maskable"
     }
   ],
-  "start_url": "./index.html",
+  "start_url": ".",
   "scope": ".",
   "display": "standalone",
   "theme_color": "#4f46e5",
