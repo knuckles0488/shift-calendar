@@ -261,7 +261,7 @@ const NoteIcon = () => (<div className="w-1.5 h-1.5 bg-indigo-500 rounded-full">
 
 const CalendarDay: React.FC<{ dayInfo: DayInfo; isToday: boolean; isStarred: boolean; hasNote: boolean; onClick: () => void; }> = ({ dayInfo, isToday, isStarred, hasNote, onClick }) => {
   const { date, shift, holiday, specialEvent, isCustomHoliday } = dayInfo;
-  const baseClasses = "relative p-1.5 pb-5 flex flex-col h-full border-r border-b border-gray-200 dark:border-gray-700/50 cursor-pointer transition-colors duration-200";
+  const baseClasses = "relative p-1.5 pb-5 flex flex-col h-full border-r border-b border-gray-400 dark:border-gray-500 cursor-pointer transition-colors duration-200 overflow-hidden";
   const todayRing = isToday ? 'ring-2 ring-indigo-500 dark:ring-indigo-400 z-10' : '';
   
   return (
@@ -290,19 +290,19 @@ const Calendar: React.FC<{ currentDate: Date; daysMap: Map<string, DayInfo>; sta
   const startingDayOfWeek = firstDayOfMonth.getUTCDay();
   const grid = [];
   
-  for (let i = 0; i < startingDayOfWeek; i++) grid.push(<div key={`pad-prev-${i}`} className="border-r border-b border-gray-200 dark:border-gray-700/50 bg-gray-50 dark:bg-gray-800/50"></div>);
+  for (let i = 0; i < startingDayOfWeek; i++) grid.push(<div key={`pad-prev-${i}`} className="border-r border-b border-gray-400 dark:border-gray-500 bg-gray-50 dark:bg-gray-800/50"></div>);
   for (let day = 1; day <= daysInMonth; day++) {
     const date = new Date(Date.UTC(year, month, day));
     const key = formatDateKey(date);
     const dayInfo = daysMap.get(key);
     if (dayInfo) grid.push(<CalendarDay key={key} dayInfo={dayInfo} isToday={isSameDay(date, today)} isStarred={!!starredDays[key]} hasNote={!!notes[key]} onClick={() => onDayClick(date)}/>);
-    else grid.push(<div key={`pad-day-${day}`} className="border-r border-b border-gray-200 dark:border-gray-700/50 bg-gray-50 dark:bg-gray-800/50"></div>);
+    else grid.push(<div key={`pad-day-${day}`} className="border-r border-b border-gray-400 dark:border-gray-500 bg-gray-50 dark:bg-gray-800/50"></div>);
   }
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg h-full flex flex-col">
         <div className="grid grid-cols-7 border-b border-gray-200 dark:border-gray-700">{WEEK_DAYS.map(day => (<div key={day} className="p-2 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{day}</div>))}</div>
-        <div className="grid grid-cols-7 grid-rows-6 flex-grow">{grid}</div>
+        <div className="grid grid-cols-7 grid-rows-6 flex-grow border-t border-l border-gray-400 dark:border-gray-500">{grid}</div>
     </div>
   );
 };
@@ -346,6 +346,40 @@ const DayDetailModal: React.FC<{ dayInfo: DayInfo; note: string; isStarred: bool
     </div>
   );
 };
+
+const StarredNotesList: React.FC<{ notes: DayInfo[]; allNotes: Notes }> = ({ notes, allNotes }) => {
+    if (notes.length === 0) {
+        return null;
+    }
+
+    return (
+        <div className="p-4 sm:p-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+                Starred Notes for {notes[0].date.toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' })}
+            </h3>
+            <ul className="space-y-3">
+                {notes.map(dayInfo => {
+                    const key = formatDateKey(dayInfo.date);
+                    const noteContent = allNotes[key];
+                    return (
+                        <li key={key} className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-md transition hover:bg-gray-100 dark:hover:bg-gray-700">
+                            <p className="font-bold text-sm text-gray-700 dark:text-gray-200 flex items-center">
+                                <StarIcon />
+                                <span className="ml-2">
+                                    {dayInfo.date.toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', timeZone: 'UTC' })}
+                                </span>
+                            </p>
+                            <p className="mt-1 pl-5 text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">
+                                {noteContent}
+                            </p>
+                        </li>
+                    );
+                })}
+            </ul>
+        </div>
+    );
+};
+
 
 const Header: React.FC<{
   currentDate: Date; onPrevMonth: () => void; onNextMonth: () => void;
@@ -407,6 +441,21 @@ const App: React.FC = () => {
     }
     return dayArray;
   }, [customHolidays]);
+  
+  const starredNotesForMonth = useMemo<DayInfo[]>(() => {
+    const month = currentDate.getUTCMonth();
+    const year = currentDate.getUTCFullYear();
+
+    return days
+      .filter(dayInfo => {
+        const key = formatDateKey(dayInfo.date);
+        return dayInfo.date.getUTCMonth() === month &&
+               dayInfo.date.getUTCFullYear() === year &&
+               starredDays[key] &&
+               notes[key] &&
+               notes[key].trim() !== '';
+      });
+  }, [days, starredDays, notes, currentDate]);
 
   const daysMap = useMemo(() => new Map(days.map(day => [formatDateKey(day.date), day])), [days]);
   const handleNoteChange = useCallback((date: Date, note: string) => setNotes(prev => ({ ...prev, [formatDateKey(date)]: note })), [setNotes]);
@@ -430,13 +479,16 @@ const App: React.FC = () => {
         onDeleteCustomHoliday={handleDeleteCustomHoliday}
       />
       <main className="flex-grow container mx-auto p-2 sm:p-4">
-        <Calendar 
-          currentDate={currentDate}
-          daysMap={daysMap}
-          starredDays={starredDays}
-          onDayClick={handleDayClick}
-          notes={notes}
-        />
+        <div className="flex flex-col gap-4 sm:gap-6">
+            <Calendar 
+              currentDate={currentDate}
+              daysMap={daysMap}
+              starredDays={starredDays}
+              onDayClick={handleDayClick}
+              notes={notes}
+            />
+            <StarredNotesList notes={starredNotesForMonth} allNotes={notes} />
+        </div>
       </main>
       {selectedDay && <DayDetailModal dayInfo={selectedDay} note={notes[formatDateKey(selectedDay.date)] || ''} isStarred={!!starredDays[formatDateKey(selectedDay.date)]} onClose={() => setSelectedDay(null)} onNoteChange={handleNoteChange} onToggleStar={handleToggleStar} />}
     </div>
