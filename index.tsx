@@ -185,12 +185,23 @@ const SettingsMenu: React.FC<{
     }, {} as GroupedDays), [allDays]);
   
   const generatePdf = (monthYear: string, daysInMonth: DayInfo[]) => {
+    // Ensure the global jspdf object and its jsPDF class are available.
     if (typeof window.jspdf === 'undefined' || typeof (window.jspdf as any).jsPDF === 'undefined') {
-        alert("PDF generation library is not loaded. Please try again.");
+        alert("PDF generation library (jsPDF) is not loaded. Please try again.");
         return;
     }
+
     const { jsPDF } = window.jspdf as any;
+
+    // Directly check if the autoTable plugin has been attached to the jsPDF prototype.
+    // jsPDF.API is an alias for the prototype. This is a more robust check against race conditions.
+    if (typeof jsPDF.API.autoTable !== 'function') {
+        alert("PDF autoTable function not found. The plugin might not have loaded correctly. Please ensure you have an internet connection and try again.");
+        return;
+    }
+    
     const doc = new jsPDF();
+
     const monthName = new Date(daysInMonth[0].date).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
     doc.setFontSize(18);
     doc.text(`Notes Summary for ${monthName}`, 14, 22);
@@ -208,11 +219,6 @@ const SettingsMenu: React.FC<{
     if (tableRows.length === 0) {
       alert(`No notes found for ${monthName} to generate a summary.`);
       return;
-    }
-
-    if (typeof (doc as any).autoTable !== 'function') {
-        alert("PDF autoTable function not found. The jsPDF-autoTable plugin might not have loaded correctly.");
-        return;
     }
 
     (doc as any).autoTable({
