@@ -79,7 +79,7 @@ const holidays: { [key: string]: string } = {
   '2025-09-30': 'Truth & Rec.',
   '2025-10-13': 'Thanksgiving',
   '2025-10-31': 'Halloween',
-  '2025-11-11': 'Remembrance Day',
+  '2025-11-11': 'Remembrance',
   '2025-12-24': 'Christmas Eve',
   '2025-12-25': 'Christmas',
   '2025-12-26': 'Boxing Day',
@@ -98,7 +98,7 @@ const holidays: { [key: string]: string } = {
   '2026-09-30': 'Truth & Rec.',
   '2026-10-12': 'Thanksgiving',
   '2026-10-31': 'Halloween',
-  '2026-11-11': 'Remembrance Day',
+  '2026-11-11': 'Remembrance',
   '2026-12-24': 'Christmas Eve',
   '2026-12-25': 'Christmas',
   '2026-12-26': 'Boxing Day',
@@ -223,6 +223,40 @@ const SettingsMenu: React.FC<{
       setEndDate('');
   };
 
+  const handleUpdateApp = async () => {
+    if (!('serviceWorker' in navigator && 'caches' in window)) {
+      alert('This browser does not support the features needed to check for updates.');
+      return;
+    }
+
+    const confirmed = window.confirm(
+      'This will check for a new version of the app. Your saved notes and settings will not be affected. Continue?'
+    );
+
+    if (confirmed) {
+      try {
+        setIsOpen(false); // Close the menu
+
+        // Unregister existing service workers to force a new one to be fetched on reload
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (const registration of registrations) {
+          await registration.unregister();
+        }
+
+        // Clear the cache to force re-fetching of all assets
+        const cacheKeys = await caches.keys();
+        await Promise.all(cacheKeys.map(key => caches.delete(key)));
+
+        // Reload the page. The browser will now fetch all files from the server.
+        window.location.reload();
+
+      } catch (error) {
+        console.error('Failed to update the app:', error);
+        alert('An error occurred while checking for updates. Please try again.');
+      }
+    }
+  };
+
   const groupedDays = useMemo(() => allDays.reduce((acc, day) => {
       const monthYearKey = getMonthYear(day.date);
       if (!acc[monthYearKey]) acc[monthYearKey] = [];
@@ -340,6 +374,20 @@ const SettingsMenu: React.FC<{
               </div>
               <button onClick={handleAddHoliday} className="w-full px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors text-sm font-semibold">Add</button>
             </div>
+          </div>
+          <div className="border-t border-gray-200 dark:border-gray-700"></div>
+            <div className="p-4">
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">Application</p>
+              <button
+                onClick={handleUpdateApp}
+                className="w-full flex items-center justify-center px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 dark:bg-gray-600 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors text-sm font-semibold"
+                aria-label="Check for app updates"
+              >
+                <svg className="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0011.664 0l3.181-3.183m-4.991-2.691V5.25a3.75 3.75 0 00-3.75-3.75H8.25a3.75 3.75 0 00-3.75 3.75v4.992" />
+                </svg>
+                Check for Updates
+              </button>
           </div>
         </div>
       )}
