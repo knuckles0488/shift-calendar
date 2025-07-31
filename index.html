@@ -9,8 +9,9 @@
     <meta name="theme-color" content="#4f46e5" />
     <title>Shift Cycle Daily Planner</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Updated to latest stable UMD versions -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf-autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf-autotable.umd.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script type="importmap">
 {
@@ -25,6 +26,7 @@
 </head>
   <body class="bg-gray-100 dark:bg-gray-900">
     <div id="root"></div>
-    <script type="text/babel" data-type="module" data-presets="react,typescript" src="./index.tsx"></script>
+    <!-- Added 'defer' to ensure libraries load before the app script runs -->
+    <script type="text/babel" data-type="module" data-presets="react,typescript" src="./index.tsx" defer></script>
   </body>
 </html>
