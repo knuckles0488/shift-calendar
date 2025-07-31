@@ -1,13 +1,14 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom/client';
 
+// ====== GLOBAL DECLARATIONS ======
 declare global {
   interface Window {
     jspdf: any;
   }
 }
 
-// ====== TYPES ======
+// ====== TYPES (from types.ts) ======
 enum ShiftType {
   DAY = 'Day',
   NIGHT = 'Night',
@@ -38,9 +39,8 @@ interface CustomHoliday {
 
 type GroupedDays = Record<string, DayInfo[]>;
 
-// ====== UTILS ======
+// ====== UTILS (from utils/*.ts) ======
 
-// from utils/date.ts
 const formatDateKey = (date: Date): string => {
   const year = date.getUTCFullYear();
   const month = (date.getUTCMonth() + 1).toString().padStart(2, '0');
@@ -60,7 +60,6 @@ const isSameDay = (date1: Date, date2: Date): boolean => {
            date1.getDate() === date2.getDate();
 }
 
-// from utils/holidays.ts
 const holidays: { [key: string]: string } = {
   '2025-01-01': "New Year's Day", '2025-02-17': 'Family Day', '2025-04-18': 'Good Friday',
   '2025-05-19': 'Victoria Day', '2025-07-01': 'Canada Day', '2025-08-04': 'BC Day',
@@ -77,7 +76,6 @@ const getHolidayForDate = (date: Date): string | null => {
   return holidays[key] || null;
 };
 
-// from utils/schedule.ts
 const REFERENCE_DATE = new Date('2025-07-01T00:00:00Z');
 const CYCLE_LENGTH = 8;
 const SHIFT_CYCLE: string[] = ['N2', 'O1', 'O2', 'O3', 'O4', 'D1', 'D2', 'N1'];
@@ -111,12 +109,11 @@ const getShiftForDate = (date: Date): Pick<DayInfo, 'shift' | 'shiftDetail' | 'h
   return { shift, shiftDetail, holiday, specialEvent };
 };
 
-// ====== HOOKS ======
-// from hooks/useLocalStorage.ts
+// ====== HOOKS (from hooks/useLocalStorage.ts) ======
 type SetValue<T> = (value: T | ((val: T) => T)) => void;
 
 function useLocalStorage<T>(key: string, initialValue: T): [T, SetValue<T>] {
-  const readValue = (): T => {
+  const readValue = useCallback((): T => {
     if (typeof window === 'undefined') return initialValue;
     try {
       const item = window.localStorage.getItem(key);
@@ -125,11 +122,11 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, SetValue<T>] {
       console.warn(`Error reading localStorage key “${key}”:`, error);
       return initialValue;
     }
-  };
+  }, [initialValue, key]);
 
   const [storedValue, setStoredValue] = useState<T>(readValue);
 
-  const setValue: SetValue<T> = (value) => {
+  const setValue: SetValue<T> = useCallback((value) => {
     try {
       const valueToStore = value instanceof Function ? value(storedValue) : value;
       setStoredValue(valueToStore);
@@ -139,30 +136,27 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, SetValue<T>] {
     } catch (error) {
       console.warn(`Error setting localStorage key “${key}”:`, error);
     }
-  };
-
+  }, [key, storedValue]);
+  
   useEffect(() => {
     setStoredValue(readValue());
-  }, []);
+  }, [readValue]);
 
   return [storedValue, setValue];
 }
 
 
-// ====== COMPONENTS ======
+// ====== COMPONENTS (from components/*.tsx) ======
 
-// from components/SettingsMenu.tsx
 const TrashIcon = () => (
     <svg className="w-4 h-4 text-gray-500 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
 );
 
-interface SettingsMenuProps {
+const SettingsMenu: React.FC<{
   allDays: DayInfo[]; notes: Notes; customHolidays: CustomHoliday[];
   onAddCustomHoliday: (start: string, end: string) => void;
   onDeleteCustomHoliday: (holiday: CustomHoliday) => void;
-}
-
-const SettingsMenu: React.FC<SettingsMenuProps> = ({ allDays, notes, customHolidays, onAddCustomHoliday, onDeleteCustomHoliday }) => {
+}> = ({ allDays, notes, customHolidays, onAddCustomHoliday, onDeleteCustomHoliday }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -182,7 +176,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ allDays, notes, customHolid
       setEndDate('');
   };
 
-  const groupedDays = React.useMemo(() => allDays.reduce((acc, day) => {
+  const groupedDays = useMemo(() => allDays.reduce((acc, day) => {
       const monthYearKey = getMonthYear(day.date);
       if (!acc[monthYearKey]) acc[monthYearKey] = [];
       acc[monthYearKey].push(day);
@@ -190,11 +184,11 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ allDays, notes, customHolid
     }, {} as GroupedDays), [allDays]);
   
   const generatePdf = (monthYear: string, daysInMonth: DayInfo[]) => {
-    if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') {
+    if (typeof window.jspdf === 'undefined' || typeof (window.jspdf as any).jsPDF === 'undefined') {
         alert("PDF generation library is not loaded. Please try again.");
         return;
     }
-    const { jsPDF } = window.jspdf;
+    const { jsPDF } = window.jspdf as any;
     const doc = new jsPDF();
     const monthName = new Date(daysInMonth[0].date).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
     doc.setFontSize(18);
@@ -259,14 +253,12 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ allDays, notes, customHolid
   );
 };
 
-// from components/CalendarDay.tsx
-interface CalendarDayProps { dayInfo: DayInfo; isToday: boolean; isStarred: boolean; hasNote: boolean; onClick: () => void; }
 const shiftBgColors = { [ShiftType.DAY]: 'bg-green-100 dark:bg-green-900/50 hover:bg-green-200 dark:hover:bg-green-800/60', [ShiftType.NIGHT]: 'bg-red-100 dark:bg-red-900/50 hover:bg-red-200 dark:hover:bg-red-800/60', [ShiftType.OFF]: 'bg-blue-100 dark:bg-blue-900/50 hover:bg-blue-200 dark:hover:bg-blue-800/60' };
 const shiftTextColors = { [ShiftType.DAY]: 'text-green-800 dark:text-green-200', [ShiftType.NIGHT]: 'text-red-800 dark:text-red-200', [ShiftType.OFF]: 'text-blue-800 dark:text-blue-200' };
 const StarIcon = () => (<svg className="w-3.5 h-3.5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>);
 const NoteIcon = () => (<div className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></div>);
 
-const CalendarDay: React.FC<CalendarDayProps> = ({ dayInfo, isToday, isStarred, hasNote, onClick }) => {
+const CalendarDay: React.FC<{ dayInfo: DayInfo; isToday: boolean; isStarred: boolean; hasNote: boolean; onClick: () => void; }> = ({ dayInfo, isToday, isStarred, hasNote, onClick }) => {
   const { date, shift, holiday, specialEvent, isCustomHoliday } = dayInfo;
   const baseClasses = "relative p-1.5 pb-5 flex flex-col h-full border-r border-b border-gray-200 dark:border-gray-700/50 cursor-pointer transition-colors duration-200";
   const todayRing = isToday ? 'ring-2 ring-indigo-500 dark:ring-indigo-400 z-10' : '';
@@ -287,11 +279,8 @@ const CalendarDay: React.FC<CalendarDayProps> = ({ dayInfo, isToday, isStarred, 
   );
 };
 
-// from components/Calendar.tsx
-interface CalendarProps { currentDate: Date; daysMap: Map<string, DayInfo>; starredDays: StarredDays; notes: Notes; onDayClick: (date: Date) => void; }
 const WEEK_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-const Calendar: React.FC<CalendarProps> = ({ currentDate, daysMap, starredDays, notes, onDayClick }) => {
+const Calendar: React.FC<{ currentDate: Date; daysMap: Map<string, DayInfo>; starredDays: StarredDays; notes: Notes; onDayClick: (date: Date) => void; }> = ({ currentDate, daysMap, starredDays, notes, onDayClick }) => {
   const today = new Date();
   const month = currentDate.getUTCMonth();
   const year = currentDate.getUTCFullYear();
@@ -317,12 +306,10 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate, daysMap, starredDays, 
   );
 };
 
-// from components/DayDetailModal.tsx
-interface DayDetailModalProps { dayInfo: DayInfo; note: string; isStarred: boolean; onClose: () => void; onNoteChange: (date: Date, note: string) => void; onToggleStar: (date: Date) => void; }
 const shiftHeaderStyles = { [ShiftType.DAY]: 'bg-green-500 text-white', [ShiftType.NIGHT]: 'bg-red-500 text-white', [ShiftType.OFF]: 'bg-blue-500 text-white' };
 const StarButton = ({ isStarred, onClick }: { isStarred: boolean, onClick: () => void }) => (<button onClick={onClick} className={`p-2 rounded-full transition-colors ${isStarred ? 'bg-yellow-400/20' : 'hover:bg-gray-500/20'}`} aria-label={isStarred ? "Unstar this day" : "Star this day"}><svg className={`w-6 h-6 ${isStarred ? 'text-yellow-400' : 'text-gray-400'}`} fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg></button>);
 
-const DayDetailModal: React.FC<DayDetailModalProps> = ({ dayInfo, note, isStarred, onClose, onNoteChange, onToggleStar }) => {
+const DayDetailModal: React.FC<{ dayInfo: DayInfo; note: string; isStarred: boolean; onClose: () => void; onNoteChange: (date: Date, note: string) => void; onToggleStar: (date: Date) => void; }> = ({ dayInfo, note, isStarred, onClose, onNoteChange, onToggleStar }) => {
   const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -359,15 +346,12 @@ const DayDetailModal: React.FC<DayDetailModalProps> = ({ dayInfo, note, isStarre
   );
 };
 
-// from components/Header.tsx
-interface HeaderProps {
+const Header: React.FC<{
   currentDate: Date; onPrevMonth: () => void; onNextMonth: () => void;
   allDays: DayInfo[]; notes: Notes; customHolidays: CustomHoliday[];
   onAddCustomHoliday: (start: string, end: string) => void;
   onDeleteCustomHoliday: (holiday: CustomHoliday) => void;
-}
-
-const Header: React.FC<HeaderProps> = ({ currentDate, onPrevMonth, onNextMonth, allDays, notes, customHolidays, onAddCustomHoliday, onDeleteCustomHoliday }) => {
+}> = ({ currentDate, onPrevMonth, onNextMonth, allDays, notes, customHolidays, onAddCustomHoliday, onDeleteCustomHoliday }) => {
   const monthName = currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
   return (
     <header className="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-20">
@@ -386,7 +370,7 @@ const Header: React.FC<HeaderProps> = ({ currentDate, onPrevMonth, onNextMonth, 
   );
 };
 
-// from App.tsx
+// ====== APP COMPONENT (from App.tsx) ======
 const App: React.FC = () => {
   const getInitialDate = () => {
     const today = new Date();
@@ -434,8 +418,25 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-gray-200 flex flex-col">
-      <Header {...{currentDate, onPrevMonth: handlePrevMonth, onNextMonth: handleNextMonth, allDays: days, notes, customHolidays, onAddCustomHoliday: handleAddCustomHoliday, onDeleteCustomHoliday: handleDeleteCustomHoliday}}/>
-      <main className="flex-grow container mx-auto p-2 sm:p-4"><Calendar {...{currentDate, daysMap, starredDays, onDayClick: handleDayClick, notes}}/></main>
+      <Header 
+        currentDate={currentDate}
+        onPrevMonth={handlePrevMonth}
+        onNextMonth={handleNextMonth}
+        allDays={days}
+        notes={notes}
+        customHolidays={customHolidays}
+        onAddCustomHoliday={handleAddCustomHoliday}
+        onDeleteCustomHoliday={handleDeleteCustomHoliday}
+      />
+      <main className="flex-grow container mx-auto p-2 sm:p-4">
+        <Calendar 
+          currentDate={currentDate}
+          daysMap={daysMap}
+          starredDays={starredDays}
+          onDayClick={handleDayClick}
+          notes={notes}
+        />
+      </main>
       {selectedDay && <DayDetailModal dayInfo={selectedDay} note={notes[formatDateKey(selectedDay.date)] || ''} isStarred={!!starredDays[formatDateKey(selectedDay.date)]} onClose={() => setSelectedDay(null)} onNoteChange={handleNoteChange} onToggleStar={handleToggleStar} />}
     </div>
   );
