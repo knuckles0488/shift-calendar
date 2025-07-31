@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom/client';
 
@@ -457,8 +458,9 @@ root.render(
 );
 
 if ('serviceWorker' in navigator) {
+  const CACHE_VERSION = 'v12';
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./service-worker.js', { scope: './' })
+    navigator.serviceWorker.register(`./service-worker.js?v=${CACHE_VERSION}`, { scope: './' })
       .then(registration => console.log('Service Worker registered: ', registration))
       .catch(registrationError => console.log('Service Worker registration failed: ', registrationError));
   });
