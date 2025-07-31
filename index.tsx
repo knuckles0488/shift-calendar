@@ -551,7 +551,7 @@ const Header: React.FC<{
     <header className="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-20">
       <div className="container mx-auto px-4 py-3">
         <div className="flex justify-between items-center">
-          <div className="w-1/3 flex items-center space-x-3">
+          <div className="flex-1 flex items-center space-x-3">
             <h1 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-white hidden sm:block">Shift Planner</h1>
             <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-900/50 px-2 py-0.5 rounded-full">
               Crew {selectedCrew}
@@ -566,12 +566,12 @@ const Header: React.FC<{
                 </button>
             )}
           </div>
-          <div className="w-1/3 flex justify-center items-center space-x-2 md:space-x-4">
+          <div className="flex-shrink-0 flex justify-center items-center space-x-2 md:space-x-4">
             <button onClick={onPrevMonth} aria-label="Previous month" className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg></button>
             <h2 className="text-lg md:text-xl font-semibold text-center w-40 md:w-48">{monthName}</h2>
             <button onClick={onNextMonth} aria-label="Next month" className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg></button>
           </div>
-          <div className="w-1/3 flex justify-end items-center">
+          <div className="flex-1 flex justify-end items-center">
             <SettingsMenu {...{allDays, notes, customHolidays, selectedCrew, onAddCustomHoliday, onDeleteCustomHoliday, onCrewChange, floaterDays, onFloaterDayChange, starredDays}} />
           </div>
         </div>
