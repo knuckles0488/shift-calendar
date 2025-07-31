@@ -8,7 +8,7 @@ const urlsToCache = [
   './manifest.json',
   'https://cdn.tailwindcss.com',
   'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf-autotable.min.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf-autotable.min.js',
   'https://unpkg.com/@babel/standalone/babel.min.js',
   'https://esm.sh/react@19.1.1',
   'https://esm.sh/react-dom@19.1.1/client'
@@ -65,4 +65,3 @@ self.addEventListener('activate', event => {
     }).then(() => self.clients.claim())
   );
 });
-
