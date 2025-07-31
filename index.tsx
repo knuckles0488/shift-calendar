@@ -185,21 +185,21 @@ const SettingsMenu: React.FC<{
     }, {} as GroupedDays), [allDays]);
   
   const generatePdf = (monthYear: string, daysInMonth: DayInfo[]) => {
-    // The UMD builds expose the libraries on the window.jspdf object
     const jspdf = (window as any).jspdf;
-    const jsPDF = jspdf?.jsPDF;
-    const autoTable = jspdf?.autoTable;
-
-    if (!jsPDF) {
-      alert("PDF generation library (jsPDF) could not be found. Please check your internet connection and try again.");
+    if (!jspdf || !jspdf.jsPDF) {
+      alert("PDF generation library (jsPDF) could not be found. Please ensure you are online for the first load.");
       return;
     }
-    if (!autoTable) {
+
+    // The jspdf-autotable UMD script attaches the autoTable function to the global jspdf object.
+    if (typeof jspdf.autoTable !== 'function') {
       alert("PDF table plugin (jsPDF-autoTable) failed to load. Please check your internet connection and try again.");
       return;
     }
 
+    const { jsPDF } = jspdf;
     const doc = new jsPDF();
+    
     const monthName = new Date(daysInMonth[0].date).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
     doc.setFontSize(18);
     doc.text(`Notes Summary for ${monthName}`, 14, 22);
@@ -219,12 +219,14 @@ const SettingsMenu: React.FC<{
       return;
     }
 
-    // Call the global autoTable function, passing the doc instance.
-    autoTable(doc, {
-        head: [["Date", "Day", "Shift", "Notes"]], body: tableRows, startY: 30,
+    jspdf.autoTable(doc, {
+        head: [["Date", "Day", "Shift", "Notes"]],
+        body: tableRows,
+        startY: 30,
         headStyles: { fillColor: [22, 160, 133] },
         alternateRowStyles: { fillColor: [240, 240, 240] },
     });
+    
     doc.save(`notes-summary-${monthYear}.pdf`);
   };
 
