@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom/client';
 
@@ -129,7 +128,7 @@ const diffInDays = (date1: Date, date2: Date): number => {
     return Math.floor((utc2 - utc1) / (1000 * 60 * 60 * 24));
 }
 
-const getShiftForDate = (date: Date, crew: Crew, floaterDays: string[]): Pick<DayInfo, 'shift' | 'shiftDetail' | 'holiday' | 'specialEvent'> => {
+const getShiftForDate = (date: Date, crew: Crew, floaterDaysSet: Set<string>): Pick<DayInfo, 'shift' | 'shiftDetail' | 'holiday' | 'specialEvent'> => {
   const offset = CREW_OFFSETS[crew];
   const dayDifference = diffInDays(REFERENCE_DATE, date) + offset;
   const cycleIndex = (dayDifference % CYCLE_LENGTH + CYCLE_LENGTH) % CYCLE_LENGTH;
@@ -144,7 +143,7 @@ const getShiftForDate = (date: Date, crew: Crew, floaterDays: string[]): Pick<Da
   let specialEvent: string | undefined;
 
   const dateKey = formatDateKey(date);
-  if (floaterDays.includes(dateKey)) {
+  if (floaterDaysSet.has(dateKey)) {
     specialEvent = 'Floater';
   }
 
@@ -400,26 +399,37 @@ const shiftTextColors = { [ShiftType.DAY]: 'text-green-800 dark:text-green-200',
 const StarIcon = () => (<svg className="w-3.5 h-3.5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>);
 const NoteIcon = () => (<div className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></div>);
 
-const CalendarDay: React.FC<{ dayInfo: DayInfo; isToday: boolean; isStarred: boolean; hasNote: boolean; onClick: () => void; }> = ({ dayInfo, isToday, isStarred, hasNote, onClick }) => {
-  const { date, shift, holiday, specialEvent, isCustomHoliday } = dayInfo;
-  const baseClasses = "relative p-1.5 pb-5 flex flex-col h-full border-r border-b border-gray-400 dark:border-gray-500 cursor-pointer transition-colors duration-200 overflow-hidden";
-  const todayRing = isToday ? 'ring-2 ring-indigo-500 dark:ring-indigo-400 z-10' : '';
+const CalendarDay: React.FC<{
+    dayInfo: DayInfo;
+    isToday: boolean;
+    isStarred: boolean;
+    hasNote: boolean;
+    onDayClick: (date: Date) => void;
+}> = React.memo(({ dayInfo, isToday, isStarred, hasNote, onDayClick }) => {
+    const { date, shift, holiday, specialEvent, isCustomHoliday } = dayInfo;
+    
+    const handleClick = useCallback(() => {
+        onDayClick(date);
+    }, [onDayClick, date]);
+
+    const baseClasses = "relative p-1.5 pb-5 flex flex-col h-full border-r border-b border-gray-400 dark:border-gray-500 cursor-pointer transition-colors duration-200 overflow-hidden";
+    const todayRing = isToday ? 'ring-2 ring-indigo-500 dark:ring-indigo-400 z-10' : '';
   
-  return (
-    <div className={`${baseClasses} ${shiftBgColors[shift]} ${todayRing}`} onClick={onClick} role="button" aria-label={`View details for ${date.toDateString()}`}>
-        <div className="flex justify-between items-start">
-            <span className={`text-xs font-bold ${isToday ? 'bg-indigo-600 text-white rounded-full flex items-center justify-center w-5 h-5' : 'text-gray-700 dark:text-gray-300'}`}>{date.getUTCDate()}</span>
-            <div className="flex items-center space-x-1">{hasNote && <NoteIcon />}{isStarred && <StarIcon />}</div>
+    return (
+        <div className={`${baseClasses} ${shiftBgColors[shift]} ${todayRing}`} onClick={handleClick} role="button" aria-label={`View details for ${date.toDateString()}`}>
+            <div className="flex justify-between items-start">
+                <span className={`text-xs font-bold ${isToday ? 'bg-indigo-600 text-white rounded-full flex items-center justify-center w-5 h-5' : 'text-gray-700 dark:text-gray-300'}`}>{date.getUTCDate()}</span>
+                <div className="flex items-center space-x-1">{hasNote && <NoteIcon />}{isStarred && <StarIcon />}</div>
+            </div>
+            <div className="flex-grow flex flex-col justify-center items-center text-center mt-1">
+                {specialEvent && <p className="text-[10px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wide">{specialEvent}</p>}
+                <p className={`text-xs font-semibold ${shiftTextColors[shift]}`}>{shift}</p>
+                {holiday && <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 px-1 leading-snug" title={holiday}>{holiday}</p>}
+            </div>
+            {isCustomHoliday && (<div className="absolute bottom-0 left-0 right-0 h-4 bg-yellow-400 text-black text-[10px] font-bold flex items-center justify-center pointer-events-none">Holidays</div>)}
         </div>
-        <div className="flex-grow flex flex-col justify-center items-center text-center mt-1">
-            {specialEvent && <p className="text-[10px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wide">{specialEvent}</p>}
-            <p className={`text-xs font-semibold ${shiftTextColors[shift]}`}>{shift}</p>
-            {holiday && <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 px-1 leading-snug" title={holiday}>{holiday}</p>}
-        </div>
-        {isCustomHoliday && (<div className="absolute bottom-0 left-0 right-0 h-4 bg-yellow-400 text-black text-[10px] font-bold flex items-center justify-center pointer-events-none">Holidays</div>)}
-    </div>
-  );
-};
+    );
+});
 
 const WEEK_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const Calendar: React.FC<{ currentDate: Date; daysMap: Map<string, DayInfo>; starredDays: StarredDays; notes: Notes; onDayClick: (date: Date) => void; }> = ({ currentDate, daysMap, starredDays, notes, onDayClick }) => {
@@ -436,7 +446,7 @@ const Calendar: React.FC<{ currentDate: Date; daysMap: Map<string, DayInfo>; sta
     const date = new Date(Date.UTC(year, month, day));
     const key = formatDateKey(date);
     const dayInfo = daysMap.get(key);
-    if (dayInfo) grid.push(<CalendarDay key={key} dayInfo={dayInfo} isToday={isSameDay(date, today)} isStarred={!!starredDays[key]} hasNote={!!notes[key]} onClick={() => onDayClick(date)}/>);
+    if (dayInfo) grid.push(<CalendarDay key={key} dayInfo={dayInfo} isToday={isSameDay(date, today)} isStarred={!!starredDays[key]} hasNote={!!notes[key]} onDayClick={onDayClick}/>);
     else grid.push(<div key={`pad-day-${day}`} className="border-r border-b border-gray-400 dark:border-gray-500 bg-gray-50 dark:bg-gray-800/50"></div>);
   }
 
@@ -488,7 +498,7 @@ const DayDetailModal: React.FC<{ dayInfo: DayInfo; note: string; isStarred: bool
   );
 };
 
-const StarredNotesList: React.FC<{ notes: DayInfo[]; allNotes: Notes }> = ({ notes, allNotes }) => {
+const StarredNotesList: React.FC<{ notes: DayInfo[]; allNotes: Notes }> = React.memo(({ notes, allNotes }) => {
     if (notes.length === 0) {
         return null;
     }
@@ -519,7 +529,7 @@ const StarredNotesList: React.FC<{ notes: DayInfo[]; allNotes: Notes }> = ({ not
             </ul>
         </div>
     );
-};
+});
 
 
 const Header: React.FC<{
@@ -594,6 +604,7 @@ const App: React.FC = () => {
     const end = new Date('2026-06-30T00:00:00Z');
     const dayArray: DayInfo[] = [];
     let current = new Date(start);
+    const floaterDaysSet = new Set(floaterDays);
     const isDateInRanges = (d: Date, ranges: CustomHoliday[]): boolean => {
         const dateKey = formatDateKey(d);
         return ranges.some(range => dateKey >= range.start && dateKey <= range.end);
@@ -601,7 +612,7 @@ const App: React.FC = () => {
     while (current <= end) {
       dayArray.push({
         date: new Date(current),
-        ...getShiftForDate(new Date(current), selectedCrew, floaterDays),
+        ...getShiftForDate(new Date(current), selectedCrew, floaterDaysSet),
         isCustomHoliday: isDateInRanges(current, customHolidays),
       });
       current.setUTCDate(current.getUTCDate() + 1);
@@ -695,7 +706,7 @@ root.render(
 );
 
 if ('serviceWorker' in navigator) {
-  const CACHE_VERSION = 'v14';
+  const CACHE_VERSION = 'v15';
   window.addEventListener('load', () => {
     navigator.serviceWorker.register(`./service-worker.js?v=${CACHE_VERSION}`, { scope: './' })
       .then(registration => console.log('Service Worker registered: ', registration))
