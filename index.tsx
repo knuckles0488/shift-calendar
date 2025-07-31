@@ -210,12 +210,12 @@ const SettingsMenu: React.FC<{
       return;
     }
 
-    if (typeof (window.jspdf as any).autoTable !== 'function') {
+    if (typeof (doc as any).autoTable !== 'function') {
         alert("PDF autoTable function not found. The jsPDF-autoTable plugin might not have loaded correctly.");
         return;
     }
 
-    (window.jspdf as any).autoTable(doc, {
+    (doc as any).autoTable({
         head: [["Date", "Day", "Shift", "Notes"]], body: tableRows, startY: 30,
         headStyles: { fillColor: [22, 160, 133] },
         alternateRowStyles: { fillColor: [240, 240, 240] },
