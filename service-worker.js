@@ -1,4 +1,4 @@
-const CACHE_NAME = 'shift-planner-cache-v7';
+const CACHE_NAME = 'shift-planner-cache-v8';
 const urlsToCache = [
   './',
   './index.html',
@@ -25,6 +25,9 @@ const urlsToCache = [
 ];
 
 self.addEventListener('install', event => {
+  // Force the waiting service worker to become the active service worker.
+  self.skipWaiting();
+  
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
@@ -75,6 +78,6 @@ self.addEventListener('activate', event => {
           }
         })
       );
-    })
+    }).then(() => self.clients.claim()) // Take control of all clients
   );
 });
