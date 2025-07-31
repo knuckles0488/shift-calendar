@@ -556,6 +556,15 @@ const Header: React.FC<{
             <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-900/50 px-2 py-0.5 rounded-full">
               Crew {selectedCrew}
             </span>
+            {!isCurrentMonth && (
+                <button
+                    onClick={onGoToToday}
+                    aria-label="Go to current month"
+                    className="px-3 py-1.5 text-xs font-semibold rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                >
+                    Today
+                </button>
+            )}
           </div>
           <div className="w-1/3 flex justify-center items-center space-x-2 md:space-x-4">
             <button onClick={onPrevMonth} aria-label="Previous month" className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg></button>
@@ -563,15 +572,6 @@ const Header: React.FC<{
             <button onClick={onNextMonth} aria-label="Next month" className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg></button>
           </div>
           <div className="w-1/3 flex justify-end items-center">
-            {!isCurrentMonth && (
-                <button
-                    onClick={onGoToToday}
-                    aria-label="Go to current month"
-                    className="mr-2 sm:mr-4 px-3 py-1.5 text-xs font-semibold rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-                >
-                    Today
-                </button>
-            )}
             <SettingsMenu {...{allDays, notes, customHolidays, selectedCrew, onAddCustomHoliday, onDeleteCustomHoliday, onCrewChange, floaterDays, onFloaterDayChange, starredDays}} />
           </div>
         </div>
