@@ -1,4 +1,5 @@
-const CACHE_NAME = 'shift-planner-cache-v11';
+
+const CACHE_NAME = 'shift-planner-cache-v12';
 const urlsToCache = [
   './',
   './index.html',
@@ -64,3 +65,4 @@ self.addEventListener('activate', event => {
     }).then(() => self.clients.claim())
   );
 });
+
