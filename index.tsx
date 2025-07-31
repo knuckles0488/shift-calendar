@@ -164,11 +164,12 @@ const SettingsMenu: React.FC<{
   allDays: DayInfo[]; notes: Notes; customHolidays: CustomHoliday[];
   selectedCrew: Crew;
   floaterDays: string[];
+  starredDays: StarredDays;
   onAddCustomHoliday: (start: string, end: string) => void;
   onDeleteCustomHoliday: (holiday: CustomHoliday) => void;
   onCrewChange: (crew: Crew) => void;
   onFloaterDayChange: (index: number, newDate: string) => void;
-}> = ({ allDays, notes, customHolidays, selectedCrew, floaterDays, onAddCustomHoliday, onDeleteCustomHoliday, onCrewChange, onFloaterDayChange }) => {
+}> = ({ allDays, notes, customHolidays, selectedCrew, floaterDays, starredDays, onAddCustomHoliday, onDeleteCustomHoliday, onCrewChange, onFloaterDayChange }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -199,7 +200,11 @@ const SettingsMenu: React.FC<{
     const monthName = new Date(daysInMonth[0].date).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
 
     const rows = daysInMonth
-      .map(day => ({ day, note: notes[formatDateKey(day.date)] || '' }))
+      .map(day => ({ 
+          day, 
+          note: notes[formatDateKey(day.date)] || '',
+          isStarred: !!starredDays[formatDateKey(day.date)] 
+        }))
       .filter(({ note }) => note.trim() !== '');
 
     if (rows.length === 0) {
@@ -215,13 +220,14 @@ const SettingsMenu: React.FC<{
         return escaped;
     };
 
-    const headers = ["Date", "Weekday", "Shift", "Notes"];
+    const headers = ["Date", "Weekday", "Shift", "Starred", "Notes"];
     const csvContent = [
       headers.join(','),
-      ...rows.map(({ day, note }) => [
+      ...rows.map(({ day, note, isStarred }) => [
         formatDateKey(day.date),
         day.date.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' }),
         day.shift,
+        isStarred ? '★' : '',
         escapeCsvField(note)
       ].join(','))
     ].join('\n');
@@ -245,7 +251,7 @@ const SettingsMenu: React.FC<{
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
       </button>
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-30">
+        <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-30 max-h-[85vh] overflow-y-auto">
           <div className="p-4">
               <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">Select Crew</p>
               <div className="grid grid-cols-4 gap-2">
@@ -439,11 +445,12 @@ const Header: React.FC<{
   allDays: DayInfo[]; notes: Notes; customHolidays: CustomHoliday[];
   selectedCrew: Crew;
   floaterDays: string[];
+  starredDays: StarredDays;
   onAddCustomHoliday: (start: string, end: string) => void;
   onDeleteCustomHoliday: (holiday: CustomHoliday) => void;
   onCrewChange: (crew: Crew) => void;
   onFloaterDayChange: (index: number, newDate: string) => void;
-}> = ({ currentDate, onPrevMonth, onNextMonth, allDays, notes, customHolidays, selectedCrew, onAddCustomHoliday, onDeleteCustomHoliday, onCrewChange, floaterDays, onFloaterDayChange }) => {
+}> = ({ currentDate, onPrevMonth, onNextMonth, allDays, notes, customHolidays, selectedCrew, onAddCustomHoliday, onDeleteCustomHoliday, onCrewChange, floaterDays, onFloaterDayChange, starredDays }) => {
   const monthName = currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
   return (
     <header className="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-20">
@@ -460,7 +467,7 @@ const Header: React.FC<{
             <h2 className="text-lg md:text-xl font-semibold text-center w-40 md:w-48">{monthName}</h2>
             <button onClick={onNextMonth} aria-label="Next month" className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg></button>
           </div>
-          <div className="w-1/3 flex justify-end"><SettingsMenu {...{allDays, notes, customHolidays, selectedCrew, onAddCustomHoliday, onDeleteCustomHoliday, onCrewChange, floaterDays, onFloaterDayChange}} /></div>
+          <div className="w-1/3 flex justify-end"><SettingsMenu {...{allDays, notes, customHolidays, selectedCrew, onAddCustomHoliday, onDeleteCustomHoliday, onCrewChange, floaterDays, onFloaterDayChange, starredDays}} /></div>
         </div>
       </div>
     </header>
@@ -550,6 +557,7 @@ const App: React.FC = () => {
         customHolidays={customHolidays}
         selectedCrew={selectedCrew}
         floaterDays={floaterDays}
+        starredDays={starredDays}
         onAddCustomHoliday={handleAddCustomHoliday}
         onDeleteCustomHoliday={handleDeleteCustomHoliday}
         onCrewChange={handleCrewChange}
