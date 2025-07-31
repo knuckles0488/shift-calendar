@@ -185,22 +185,21 @@ const SettingsMenu: React.FC<{
     }, {} as GroupedDays), [allDays]);
   
   const generatePdf = (monthYear: string, daysInMonth: DayInfo[]) => {
-    // Ensure the global jspdf object and its jsPDF class are available.
-    if (typeof window.jspdf === 'undefined' || typeof (window.jspdf as any).jsPDF === 'undefined') {
-        alert("PDF generation library (jsPDF) is not loaded. Please try again.");
-        return;
+    // The UMD build of jsPDF exposes the constructor on window.jspdf.jsPDF
+    const jsPDF = (window as any)?.jspdf?.jsPDF;
+
+    if (!jsPDF) {
+      alert("PDF generation library (jsPDF) could not be found. Please check your internet connection and try again.");
+      return;
     }
 
-    const { jsPDF } = window.jspdf as any;
-
-    // Directly check if the autoTable plugin has been attached to the jsPDF prototype.
-    // jsPDF.API is an alias for the prototype. This is a more robust check against race conditions.
-    if (typeof jsPDF.API.autoTable !== 'function') {
-        alert("PDF autoTable function not found. The plugin might not have loaded correctly. Please ensure you have an internet connection and try again.");
-        return;
-    }
-    
     const doc = new jsPDF();
+
+    // The autoTable plugin patches the jsPDF instance. We check for its existence.
+    if (typeof (doc as any).autoTable !== 'function') {
+      alert("PDF table plugin (jsPDF-autoTable) failed to load. Please check your internet connection and try again.");
+      return;
+    }
 
     const monthName = new Date(daysInMonth[0].date).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
     doc.setFontSize(18);
@@ -521,7 +520,7 @@ root.render(
 );
 
 if ('serviceWorker' in navigator) {
-  const CACHE_VERSION = 'v12';
+  const CACHE_VERSION = 'v13';
   window.addEventListener('load', () => {
     navigator.serviceWorker.register(`./service-worker.js?v=${CACHE_VERSION}`, { scope: './' })
       .then(registration => console.log('Service Worker registered: ', registration))
