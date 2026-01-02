@@ -1,6 +1,0 @@
-{
-  "name": "Shift Cycle Daily Planner",
-  "description": "A daily planner designed for a 2-day, 2-night, 4-off rotating shift schedule. It allows users to add daily notes and export monthly summaries as CSV files.",
-  "requestFramePermissions": [],
-  "prompt": ""
-}
