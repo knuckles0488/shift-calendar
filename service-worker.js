@@ -1,11 +1,11 @@
 
-const CACHE_NAME = 'shift-planner-cache-v15';
+const CACHE_NAME = 'shift-planner-cache-v16';
 const urlsToCache = [
-  './',
-  './index.html',
-  './index.tsx',
-  './icon.svg',
-  './manifest.json',
+  '/',
+  '/index.html',
+  '/index.tsx',
+  '/icon.svg',
+  '/manifest.json',
   'https://cdn.tailwindcss.com',
   'https://unpkg.com/@babel/standalone/babel.min.js',
   'https://esm.sh/react@19.1.1',
@@ -18,6 +18,7 @@ self.addEventListener('install', event => {
     caches.open(CACHE_NAME)
       .then(cache => {
         console.log('Opened cache');
+        // We use absolute paths to ensure we don't cache relative to a specific deployment ID
         const requests = urlsToCache.map(url => new Request(url, {cache: 'reload'}));
         return cache.addAll(requests);
       })
@@ -25,6 +26,9 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('fetch', event => {
+  // Only handle GET requests
+  if (event.request.method !== 'GET') return;
+
   event.respondWith(
     caches.match(event.request)
       .then(response => {
@@ -33,7 +37,7 @@ self.addEventListener('fetch', event => {
         }
         return fetch(event.request).then(
           response => {
-            if(!response || (response.status !== 200 && response.type !== 'opaque') || event.request.method !== 'GET') {
+            if(!response || response.status !== 200 || response.type === 'error') {
               return response;
             }
             const responseToCache = response.clone();
