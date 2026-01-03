@@ -2,18 +2,15 @@
 {
   "cleanUrls": true,
   "trailingSlash": false,
-  "rewrites": [
+  "routes": [
     {
-      "source": "/service-worker.js",
-      "destination": "/service-worker.js"
+      "src": "/(index\\.tsx|service-worker\\.js|manifest\\.json|icon\\.svg)",
+      "continue": true
     },
+    { "handle": "filesystem" },
     {
-      "source": "/manifest.json",
-      "destination": "/manifest.json"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ]
 }
